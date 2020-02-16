@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option java_package = "com.wblog.proto";
+option java_outer_classname = "WblogMsgProto";
+import "google/protobuf/timestamp.proto";
+
+message wblog_msg {
+    int64 id = 1;
+    string msgSender =2;
+    string msgReceiver = 3;
+    string msgContent = 4;
+    int64 status = 5;
+    google.protobuf.Timestamp createDate = 6;
+}

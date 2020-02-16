@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>wblog-content-es</module>
+        <module>wblog-content-domain</module>
     </modules>
 
 </project>
