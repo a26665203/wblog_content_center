@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option java_package = "com.hugo.wblog.proto";
+option java_outer_classname = "WblogContentProto";
+import "google/protobuf/timestamp.proto";
+
+message wblog_content {
+    int64 id = 1;
+    string creator =2;
+    string content = 3;
+    string imageUrl = 4;
+    google.protobuf.Timestamp createDate = 5;
+}
