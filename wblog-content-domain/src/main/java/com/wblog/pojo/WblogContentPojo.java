@@ -1,19 +1,20 @@
 package com.wblog.pojo;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class WblogContentPojo {
-    Integer id;
+public class WblogContentPojo implements Serializable {
+    String id;
     String creator;
     String content;
     String imageUrl;
     Date createDate;
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 

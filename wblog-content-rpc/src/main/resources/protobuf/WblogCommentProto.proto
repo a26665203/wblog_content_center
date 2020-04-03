@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option java_package = "com.wblog.proto";
+option java_outer_classname = "WblogCommentProto";
+import "google/protobuf/timestamp.proto";
+
+message addWblogCommentReq{
+
+}

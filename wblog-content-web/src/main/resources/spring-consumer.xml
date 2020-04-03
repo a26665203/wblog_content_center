@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://code.alibabatech.com/schema/dubbo
+       http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+    <!--定义了消费方的应用信息，用于计算依赖关系；在 dubbo-admin 或 dubbo-monitor 会显示这个名字，方便辨识-->
+    <dubbo:application name="wblog-content-center" owner="hzj" organization="wb"/>
+
+    <!--使用 zookeeper 注册中心暴露服务，注意要先开启 zookeeper-->
+    <dubbo:registry address="zookeeper://192.168.1.28:2181"/>
+
+    <!--引用远程服务给我们提供实现bean，这是RPC（远程方法调用）的一个具体实现-->
+    <dubbo:reference id="userOnlineReportRpc" interface="com.wblog.user.rpc.UserOnlineReportRpc"/>
+    <dubbo:reference interface="com.wblog.user.rpc.WblogUserRpc" id="wblogUserRpc"/>
+    <dubbo:reference interface="com.wblog.user.rpc.WblogUserFriendRpc" id="wblogUserFriendRpc"/>
+    <dubbo:reference interface="com.wblog.user.rpc.WblogUserAboutRpc" id="wblogUserAboutRpc"/>
+</beans>

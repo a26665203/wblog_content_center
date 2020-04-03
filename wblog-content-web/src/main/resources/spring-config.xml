@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+     http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+     http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+     http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+    <context:property-placeholder ignore-resource-not-found="true" location="classpath*:*.properties"/>
+    <import resource="spring-service.xml"/>
+    <import resource="spring-consumer.xml"/>
+    <import resource="springMVC.xml"/>
+    <!--定义了提供方应用信息，用于计算依赖关系；在 dubbo-admin 或 dubbo-monitor 中会显示这个名字，方便辨识-->
+    <dubbo:application name="wblog-content-center" owner="hzj" organization="wb"/>
+
+    <!--使用 zookeeper 注册中心对外暴露服务，注意要先开启 zookeeper-->
+    <dubbo:registry address="zookeeper://192.168.1.28:2181"/>
+
+    <!-- 用dubbo协议在提供方服务器的20880端口暴露服务 -->
+    <dubbo:protocol name="dubbo" port="20880" />
+
+    <!--使用 dubbo 协议实现定义好的 api.PermissionService 接口-->
+<!--    <dubbo:service interface="com.wblog.user.rpc.UserOnlineReportRpc" ref="UserOnlineReportRpc" protocol="dubbo"/>-->
+<!--    <dubbo:service interface="com.wblog.user.rpc.WblogUserRpc" ref="WblogUserRpc" protocol="dubbo"/>-->
+<!--    <dubbo:service interface="com.wblog.user.rpc.WblogUserFriendRpc" ref="WblogUserFriendRpc" protocol="dubbo"/>-->
+<!--    <dubbo:service interface="com.wblog.user.rpc.WblogUserAboutRpc" ref="WblogUserAboutRpc" protocol="dubbo"/>-->
+
+</beans>

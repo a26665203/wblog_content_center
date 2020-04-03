@@ -3,18 +3,18 @@ package com.wblog.pojo;
 import java.util.Date;
 
 public class WblogMsgPojo {
-    Integer id ;
+    String id;
     String msgSender;
     String msgReceiver;
     String msgContent;
     Integer status;
     Date createDate;
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 

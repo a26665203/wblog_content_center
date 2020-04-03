@@ -3,25 +3,25 @@ package com.wblog.pojo;
 import java.util.Date;
 
 public class CommentContentPojo {
-    Integer id;
-    Integer blogId;
+    String id;
+    String blogId;
     String commentContent;
     String commenter;
     Date createDate;
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Integer getBlogId() {
+    public String getBlogId() {
         return blogId;
     }
 
-    public void setBlogId(Integer blogId) {
+    public void setBlogId(String blogId) {
         this.blogId = blogId;
     }
 

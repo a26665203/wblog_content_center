@@ -6,8 +6,12 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="wblogcontentdomain" />
+        <module name="wblogcontentrpc" />
         <module name="wblog-content-es" />
+        <module name="wblogcontentweb" />
+        <module name="wblogcontentdomain" />
+        <module name="wblogcontentservice" />
+        <module name="wblogcontentcommon" />
       </profile>
     </annotationProcessing>
   </component>
