@@ -12,6 +12,7 @@ import com.wblog.proto.IncrUserAboutProto;
 import com.wblog.user.rpc.WblogUserAboutRpc;
 import com.weblog.content.common.WblogContentResult;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -24,36 +25,37 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
-
+@Service
 public class WblogCommentServiceImpl implements WblogCommentService {
     Logger logger = LoggerFactory.getLogger(WblogCommentServiceImpl.class);
 
     @Resource
     WblogUserAboutRpc wblogUserAboutRpc;
     @Override
-    public WblogContentResult<Boolean> addWblogComment(WblogContentPojo wblogContentPojo) {
+    public WblogContentResult<Boolean> addWblogComment(CommentContentPojo commentContentPojo) {
         WblogContentResult<Boolean> result = new WblogContentResult<Boolean>();
         logger.info("WblogCommentServiceImpl.addWblogComment");
-        if(wblogContentPojo==null){
+        if(commentContentPojo==null){
             result.setCode(400);
             result.setDesc("参数错误");
             return result;
         }
-        if(StringUtils.isBlank(wblogContentPojo.getCreator())){
+        if(StringUtils.isBlank(commentContentPojo.getCommenter())){
             result.setCode(400);
             result.setDesc("评论创建者不能为空");
             return result;
         }
         try{
-            wblogContentPojo.setId(UUID.randomUUID().toString());
-            JSONObject jsonObject = JSONObject.parseObject(JSON.toJSONString(wblogContentPojo));
+            commentContentPojo.setId(UUID.randomUUID().toString());
+            JSONObject jsonObject = JSONObject.parseObject(JSON.toJSONString(commentContentPojo));
             ContentESClient.saveData(jsonObject,"wblog_content_center_comment","wblogComments");
             IncrUserAboutProto.incrUserAboutReq.Builder builder = IncrUserAboutProto.incrUserAboutReq.newBuilder();
             builder.setReqName("comment");
-            builder.setNickName(wblogContentPojo.getCreator());
+            builder.setNickName(commentContentPojo.getCommenter());
             byte[] bytes = wblogUserAboutRpc.incrReq(builder.build().toByteArray());
             IncrUserAboutProto.incrUserAboutRes res = IncrUserAboutProto.incrUserAboutRes.parseFrom(bytes);
             if(res.getCode()==200){
@@ -72,12 +74,12 @@ public class WblogCommentServiceImpl implements WblogCommentService {
     }
 
     @Override
-    public WblogContentResult<List<CommentContentPojo>> findWblogCommentByPage(Integer page, String creator, Integer size) {
+    public WblogContentResult<List<CommentContentPojo>> findWblogCommentByPage(Integer page, String commenter, Integer size) {
         WblogContentResult<List<CommentContentPojo>> result = new WblogContentResult<List<CommentContentPojo>>();
-        logger.info("WblogCommentServiceImpl.findWblogCommentByPage------>creator:"+creator+",page:"+page+",size:"+size);
+        logger.info("WblogCommentServiceImpl.findWblogCommentByPage------>commenter:"+commenter+",page:"+page+",size:"+size);
         try{
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            boolQueryBuilder.must(QueryBuilders.termQuery("creator",creator));
+            boolQueryBuilder.must(QueryBuilders.termQuery("commenter",commenter));
             SearchResponse response = ContentESClient.getClient().prepareSearch("wblog_content_center_comment")
                     .setTypes("wblogComments").setQuery(boolQueryBuilder).addSort("createDate", SortOrder.DESC).setSize(size).setFrom(page)
                     .execute().actionGet();
@@ -132,6 +134,37 @@ public class WblogCommentServiceImpl implements WblogCommentService {
             }
         }catch (Exception e){
             logger.error("WblogCommentServiceImpl.deleteWblogComment------>"+e);
+        }
+        return result;
+    }
+
+    @Override
+    public WblogContentResult<List<CommentContentPojo>> findWblogCommentByBlogId(Integer page, String blogId, Integer size) {
+        WblogContentResult<List<CommentContentPojo>> result = new WblogContentResult<List<CommentContentPojo>>();
+        logger.info("WblogCommentServiceImpl.findWblogCommentByBlogId----->page:"+page+",blogId:"+blogId);
+        try{
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+            boolQueryBuilder.must(QueryBuilders.termQuery("blogId",blogId));
+            SearchResponse response = ContentESClient.getClient().prepareSearch("wblog_content_center_comment").setTypes("wblogComments")
+                    .setQuery(boolQueryBuilder).addSort("createDate",SortOrder.DESC).setFrom(page).setSize(size).execute().actionGet();
+            SearchHits hits = response.getHits();
+            List<CommentContentPojo> list = new ArrayList<CommentContentPojo>();
+            for(SearchHit hit : hits.getHits()){
+                CommentContentPojo commentContentPojo = new CommentContentPojo();
+                Map<String, DocumentField> fields = hit.getFields();
+                commentContentPojo.setId((String)fields.get("id").getValue());
+                commentContentPojo.setBlogId((String)fields.get("blogId").getValue());
+                commentContentPojo.setCommentContent((String) fields.get("commentContent").getValue());
+                commentContentPojo.setCommenter((String)fields.get("commenter").getValue());
+                commentContentPojo.setCreateDate((Date)fields.get("createDate").getValue());
+                list.add(commentContentPojo);
+            }
+            result.setCode(200);
+            result.setResult(list);
+        }catch (Exception e){
+            logger.error("WblogCommentServiceImpl.findWBlogCommentByBlogId.{}",e);
+            result.setCode(400);
+            result.setDesc(e.getMessage());
         }
         return result;
     }

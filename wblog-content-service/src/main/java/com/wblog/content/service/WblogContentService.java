@@ -1,7 +1,6 @@
 package com.wblog.content.service;
 
 import com.wblog.pojo.WblogContentPojo;
-import com.wblog.proto.WblogContentProto;
 import com.weblog.content.common.WblogContentResult;
 
 import java.util.List;

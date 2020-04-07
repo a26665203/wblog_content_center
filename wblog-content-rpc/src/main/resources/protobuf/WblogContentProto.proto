@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option java_package = "com.wblog.proto";
+option java_outer_classname = "WblogContentProto";
+import "google/protobuf/timestamp.proto";
+
+message AddWblogContentReq{
+    WblogContentPojo pojo = 1;
+}
+
+message WblogContentPojo{
+    string id = 1;
+    string creator = 2;
+    string content = 3;
+    string imageUrl = 4;
+    google.protobuf.Timestamp createDate = 5;
+}
+
+message AddWblogContentRes{
+    int32 code = 1;
+    string desc = 2;
+    bool result = 3;
+}
+
+message FindWblogContentByPageReq{
+    int32 page = 1;
+    int32 size = 2;
+    string creator = 3;
+}
+
+message FindWblogContentByPageRes{
+    repeated WblogContentPojo result = 1;
+    int32 code = 2;
+    string desc =3;
+}
+
+message DeleteWblogContentReq{
+    string id = 1;
+    string nickName =2;
+}
+
+message DeleteWblogContentRes{
+    string desc = 1;
+    int32 code = 2;
+    bool result = 3;
+}

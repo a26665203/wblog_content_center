@@ -4,6 +4,55 @@ option java_package = "com.wblog.proto";
 option java_outer_classname = "WblogCommentProto";
 import "google/protobuf/timestamp.proto";
 
-message addWblogCommentReq{
+message AddWblogCommentReq{
+    CommentContentPojo pojo = 1;
+}
 
+message CommentContentPojo{
+    string id = 1;
+    string blogId = 2;
+    string commentContent = 3;
+    string commenter = 4;
+    google.protobuf.Timestamp createDate = 5;
+}
+
+message AddWblogCommentRes{
+    int32 code = 1;
+    string desc = 2;
+    bool result = 3;
+}
+
+message FindWblogCommentByPageReq{
+    int32 page = 1;
+    int32 size = 2;
+    string creator = 3;
+}
+
+message FindWblogCommentByPageRes{
+    int32 code = 1;
+    string desc = 2;
+    repeated CommentContentPojo result = 3;
+}
+
+message DeleteWblogCommentReq{
+    string id = 1;
+    string nickName = 2;
+}
+
+message DeleteWblogCommentRes{
+    string desc = 1;
+    int32 code = 2;
+    bool result = 3;
+}
+
+message FindWblogCommentByBlogIdReq{
+    int32 page = 1;
+    int32 size = 2;
+    string blogId = 3;
+}
+
+message FindWblogCommentByBlogIdRes{
+    int32 code = 1;
+    string desc = 2;
+    repeated CommentContentPojo result = 3;
 }
