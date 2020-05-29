@@ -8,7 +8,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
+<version>1.0-SNAPSHOT</version>
     <artifactId>wblog-content-service</artifactId>
     <build>
         <plugins>
@@ -73,11 +73,6 @@
         </dependency>
         <dependency>
             <groupId>com.hugo.wblog</groupId>
-            <artifactId>wblog-user-rpc</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.hugo.wblog</groupId>
             <artifactId>wblog-content-rpc</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
@@ -85,6 +80,12 @@
             <groupId>com.hugo.wblog</groupId>
             <artifactId>wblog-content-rpc</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+            <version>3.2.4.RELEASE</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

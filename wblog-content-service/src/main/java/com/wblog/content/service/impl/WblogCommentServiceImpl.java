@@ -7,11 +7,10 @@ import com.wblog.content.esClient.ContentESClient;
 import com.wblog.content.service.WblogCommentService;
 import com.wblog.pojo.CommentContentPojo;
 import com.wblog.pojo.WblogContentPojo;
-import com.wblog.proto.DecrUserAboutProto;
-import com.wblog.proto.IncrUserAboutProto;
-import com.wblog.user.rpc.WblogUserAboutRpc;
+import com.weblog.content.common.IDUtils;
 import com.weblog.content.common.WblogContentResult;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.document.DocumentField;
@@ -33,8 +32,6 @@ import java.util.*;
 public class WblogCommentServiceImpl implements WblogCommentService {
     Logger logger = LoggerFactory.getLogger(WblogCommentServiceImpl.class);
 
-    @Resource
-    WblogUserAboutRpc wblogUserAboutRpc;
     @Override
     public WblogContentResult<Boolean> addWblogComment(CommentContentPojo commentContentPojo) {
         WblogContentResult<Boolean> result = new WblogContentResult<Boolean>();
@@ -50,21 +47,11 @@ public class WblogCommentServiceImpl implements WblogCommentService {
             return result;
         }
         try{
-            commentContentPojo.setId(UUID.randomUUID().toString());
+            commentContentPojo.setCreateDate(new Date());
             JSONObject jsonObject = JSONObject.parseObject(JSON.toJSONString(commentContentPojo));
             ContentESClient.saveData(jsonObject,"wblog_content_center_comment","wblogComments");
-            IncrUserAboutProto.incrUserAboutReq.Builder builder = IncrUserAboutProto.incrUserAboutReq.newBuilder();
-            builder.setReqName("comment");
-            builder.setNickName(commentContentPojo.getCommenter());
-            byte[] bytes = wblogUserAboutRpc.incrReq(builder.build().toByteArray());
-            IncrUserAboutProto.incrUserAboutRes res = IncrUserAboutProto.incrUserAboutRes.parseFrom(bytes);
-            if(res.getCode()==200){
-                result.setCode(200);
-                result.setResult(true);
-            }else{
-                result.setCode(res.getCode());
-                result.setDesc(res.getDesc());
-            }
+            result.setCode(200);
+            result.setResult(true);
         }catch (Exception e){
             logger.error("WblogCommentServiceImpl.addWblogComment----->"+e);
             result.setCode(400);
@@ -87,12 +74,13 @@ public class WblogCommentServiceImpl implements WblogCommentService {
             List<CommentContentPojo> list = new ArrayList<CommentContentPojo>();
             for(SearchHit hit : hits.getHits()){
                 CommentContentPojo commentContentPojo = new CommentContentPojo();
-                Map<String, DocumentField> fields = hit.getFields();
-                commentContentPojo.setId((String)fields.get("id").getValue());
-                commentContentPojo.setBlogId((String)fields.get("blogId").getValue());
-                commentContentPojo.setCommentContent((String) fields.get("commentContent").getValue());
-                commentContentPojo.setCommenter((String)fields.get("commenter").getValue());
-                commentContentPojo.setCreateDate((Date)fields.get("createDate").getValue());
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                commentContentPojo.setId((String) sourceAsMap.get("id"));
+                commentContentPojo.setBlogId((String) sourceAsMap.get("blogId"));
+                commentContentPojo.setCommentContent((String) sourceAsMap.get("commentContent"));
+                commentContentPojo.setCommenter((String) sourceAsMap.get("commenter"));
+                Long time = (Long) sourceAsMap.get("createDate");
+                commentContentPojo.setCreateDate(new Date(time));;
                 list.add(commentContentPojo);
             }
             result.setCode(200);
@@ -108,7 +96,7 @@ public class WblogCommentServiceImpl implements WblogCommentService {
     @Override
     public WblogContentResult<Boolean> deleteWblogComment(String id, String nickName) {
         WblogContentResult<Boolean> result = new WblogContentResult<Boolean>();
-        if(StringUtils.isBlank(id)){
+        if(id==null){
             result.setCode(400);
             result.setDesc("参数错误");
             return result;
@@ -117,23 +105,15 @@ public class WblogCommentServiceImpl implements WblogCommentService {
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
             boolQueryBuilder.must(QueryBuilders.termQuery("id",id));
             BulkByScrollResponse res = DeleteByQueryAction.INSTANCE.newRequestBuilder(ContentESClient.getClient())
-                    .filter(boolQueryBuilder).source("wblog_content_center_comment","wblogComments").get();
-            long del = res.getDeleted();
-            DecrUserAboutProto.decrUserAboutReq.Builder builder = DecrUserAboutProto.decrUserAboutReq.newBuilder();
-            builder.setNickName(nickName);
-            builder.setReqName("comment");
-            byte[] bytes = wblogUserAboutRpc.decrReq(builder.build().toByteArray());
-            DecrUserAboutProto.decrUserAboutRes response = DecrUserAboutProto.decrUserAboutRes.parseFrom(bytes);
-            Integer code = response.getCode();
-            if(code == 200){
-                result.setCode(200);
-                result.setResult(true);
-            }else{
-                result.setCode(response.getCode());
-                result.setDesc(response.getDesc());
-            }
+                    .filter(boolQueryBuilder).source("wblog_content_center_comment").get();
+//            DeleteResponse deleteResponse = ContentESClient.getClient().prepareDelete().setIndex("wblog_content_center_comment").setType("wblogComments").setId(id).execute().actionGet();
+//            logger.info("success or not------> );
+            result.setCode(200);
+            result.setResult(true);
         }catch (Exception e){
             logger.error("WblogCommentServiceImpl.deleteWblogComment------>"+e);
+            result.setCode(400);
+            result.setDesc(e.getMessage());
         }
         return result;
     }
@@ -151,12 +131,13 @@ public class WblogCommentServiceImpl implements WblogCommentService {
             List<CommentContentPojo> list = new ArrayList<CommentContentPojo>();
             for(SearchHit hit : hits.getHits()){
                 CommentContentPojo commentContentPojo = new CommentContentPojo();
-                Map<String, DocumentField> fields = hit.getFields();
-                commentContentPojo.setId((String)fields.get("id").getValue());
-                commentContentPojo.setBlogId((String)fields.get("blogId").getValue());
-                commentContentPojo.setCommentContent((String) fields.get("commentContent").getValue());
-                commentContentPojo.setCommenter((String)fields.get("commenter").getValue());
-                commentContentPojo.setCreateDate((Date)fields.get("createDate").getValue());
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                commentContentPojo.setId((String) sourceAsMap.get("id"));
+                commentContentPojo.setBlogId((String) sourceAsMap.get("blogId"));
+                commentContentPojo.setCommentContent((String) sourceAsMap.get("commentContent"));
+                commentContentPojo.setCommenter((String) sourceAsMap.get("commenter"));
+                Long time = (Long) sourceAsMap.get("createDate");
+                commentContentPojo.setCreateDate(new Date(time));
                 list.add(commentContentPojo);
             }
             result.setCode(200);

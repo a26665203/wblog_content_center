@@ -1,6 +1,7 @@
 package com.wblog.content.rpc;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import com.wblog.content.service.WblogMsgService;
 import com.wblog.pojo.WblogMsgPojo;
 import com.wblog.proto.WblogMsgProto;
@@ -24,8 +25,11 @@ public class WblogMsgRpcImpl implements WblogMsgRpc{
         WblogContentResult<Boolean> result = wblogMsgService.addWblogMsg(wblogMsgPojo);
         WblogMsgProto.AddWblogMsgRes.Builder builder = WblogMsgProto.AddWblogMsgRes.newBuilder();
         builder.setCode(result.getCode());
-        builder.setDesc(result.getDesc());
-        builder.setResult(result.getResult());
+        if(result.getCode() == 200){
+            builder.setResult(result.getResult());
+        }else {
+            builder.setDesc(result.getDesc());
+        }
         return builder.build().toByteArray();
     }
 
@@ -36,11 +40,21 @@ public class WblogMsgRpcImpl implements WblogMsgRpc{
         List<WblogMsgPojo> mid = wblogContentByPage.getResult();
         WblogMsgProto.FindWblogContentByPageRes.Builder builder = WblogMsgProto.FindWblogContentByPageRes.newBuilder();
         builder.setCode(wblogContentByPage.getCode());
-         builder.setDesc(wblogContentByPage.getDesc());
-        for(int i =1 ;i<mid.size();i++){
-            WblogMsgProto.WblogMsgPojo wblogMsgPojo = WblogMsgProto.WblogMsgPojo.newBuilder().build();
-            BeanUtils.copyProperties(mid.get(i),wblogMsgPojo);
-            builder.setResult(i,wblogMsgPojo);
+        if(wblogContentByPage.getCode() == 200) {
+            for (int i = 1; i < mid.size(); i++) {
+                WblogMsgProto.WblogMsgPojo.Builder wblogMsgPojo = WblogMsgProto.WblogMsgPojo.newBuilder();
+                Timestamp.Builder builder1 = Timestamp.newBuilder();
+                builder1.setSeconds(mid.get(i).getCreateDate().getTime()/1000);
+                wblogMsgPojo.setCreateDate(builder1);
+                wblogMsgPojo.setId(mid.get(i).getId());
+                wblogMsgPojo.setMsgContent(mid.get(i).getMsgContent());
+                wblogMsgPojo.setMsgSender(mid.get(i).getMsgSender());
+                wblogMsgPojo.setMsgReceiver(mid.get(i).getMsgReceiver());
+                wblogMsgPojo.setStatus(mid.get(i).getStatus());
+                builder.addResult(i, wblogMsgPojo);
+            }
+        }else {
+            builder.setDesc(wblogContentByPage.getDesc());
         }
         return builder.build().toByteArray();
     }

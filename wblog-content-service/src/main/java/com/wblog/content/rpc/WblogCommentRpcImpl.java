@@ -1,6 +1,7 @@
 package com.wblog.content.rpc;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import com.wblog.content.service.WblogCommentService;
 import com.wblog.pojo.CommentContentPojo;
 import com.wblog.proto.CommentContentProto;
@@ -27,8 +28,11 @@ public class WblogCommentRpcImpl implements WblogCommentRpc {
         WblogContentResult<Boolean> result = wblogCommentService.addWblogComment(pojo);
         WblogCommentProto.AddWblogCommentRes.Builder builder = WblogCommentProto.AddWblogCommentRes.newBuilder();
         builder.setCode(result.getCode());
-        builder.setDesc(result.getDesc());
-        builder.setResult(result.getResult());
+        if(result.getCode() == 200){
+            builder.setResult(result.getResult());
+        }else {
+            builder.setDesc(result.getDesc());
+        }
         return builder.build().toByteArray();
     }
 
@@ -39,13 +43,23 @@ public class WblogCommentRpcImpl implements WblogCommentRpc {
         List<CommentContentPojo> result = wblogCommentByPage.getResult();
         WblogCommentProto.FindWblogCommentByPageRes.Builder builder = WblogCommentProto.FindWblogCommentByPageRes.newBuilder();
         builder.setCode(wblogCommentByPage.getCode());
-        builder.setDesc(wblogCommentByPage.getDesc());
-        for(int i = 0 ;i<result.size();i++){
-            WblogCommentProto.CommentContentPojo m = WblogCommentProto.CommentContentPojo.newBuilder().build();
-            BeanUtils.copyProperties(result.get(i),m);
-            builder.setResult(i,m);
-        }
+        if(wblogCommentByPage.getCode() == 200) {
 
+            for (int i = 0; i < result.size(); i++) {
+                WblogCommentProto.CommentContentPojo.Builder builder1 = WblogCommentProto.CommentContentPojo.newBuilder();
+                builder1.setBlogId(result.get(i).getBlogId());
+                Timestamp.Builder builder2 = Timestamp.newBuilder();
+                builder2.setSeconds(result.get(i).getCreateDate().getTime() / 1000);
+                builder1.setCreateDate(builder2);
+                builder1.setCommenter(result.get(i).getCommenter());
+                builder1.setCommentContent(result.get(i).getCommentContent());
+                builder1.setId(result.get(i).getId());
+                builder.addResult(i, builder1);
+            }
+        }
+        else {
+            builder.setDesc(wblogCommentByPage.getDesc());
+        }
         return builder.build().toByteArray();
     }
 
@@ -55,8 +69,11 @@ public class WblogCommentRpcImpl implements WblogCommentRpc {
         WblogContentResult<Boolean> result = wblogCommentService.deleteWblogComment(req.getId(), req.getNickName());
         WblogCommentProto.DeleteWblogCommentRes.Builder builder = WblogCommentProto.DeleteWblogCommentRes.newBuilder();
         builder.setCode(result.getCode());
-        builder.setDesc(result.getDesc());
-        builder.setResult(result.getResult());
+        if(result.getCode() == 200) {
+            builder.setResult(result.getResult());
+        }else {
+            builder.setDesc(result.getDesc());
+        }
         return builder.build().toByteArray();
     }
 
@@ -67,13 +84,21 @@ public class WblogCommentRpcImpl implements WblogCommentRpc {
         List<CommentContentPojo> result = wblogCommentByBlogId.getResult();
         WblogCommentProto.FindWblogCommentByBlogIdRes.Builder builder = WblogCommentProto.FindWblogCommentByBlogIdRes.newBuilder();
         builder.setCode(wblogCommentByBlogId.getCode());
-        builder.setDesc(wblogCommentByBlogId.getDesc());
-        for(int i = 0 ;i<result.size();i++){
-            WblogCommentProto.CommentContentPojo m = WblogCommentProto.CommentContentPojo.newBuilder().build();
-            BeanUtils.copyProperties(result.get(i),m);
-            builder.setResult(i,m);
+        if(wblogCommentByBlogId.getCode() == 200) {
+            for (int i = 0; i < result.size(); i++) {
+                WblogCommentProto.CommentContentPojo.Builder builder1 = WblogCommentProto.CommentContentPojo.newBuilder();
+                builder1.setBlogId(result.get(i).getBlogId());
+                Timestamp.Builder builder2 = Timestamp.newBuilder();
+                builder2.setSeconds(result.get(i).getCreateDate().getTime() / 1000);
+                builder1.setCreateDate(builder2);
+                builder1.setCommenter(result.get(i).getCommenter());
+                builder1.setCommentContent(result.get(i).getCommentContent());
+                builder1.setId(result.get(i).getId());
+                builder.addResult(i, builder1);
+            }
+        }else{
+            builder.setDesc(wblogCommentByBlogId.getDesc());
         }
-
         return builder.build().toByteArray();
     }
 }

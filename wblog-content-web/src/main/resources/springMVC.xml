@@ -18,8 +18,7 @@
       在配置文件中使用<context:annotationconfig/>之前，必须在 <beans> 元素中声明 context 命名空间<context:component-scan/>。
       2）是对包进行扫描，实现注释驱动Bean定义，同时将bean自动注入容器中使用。即解决了@Controller标识的类的bean的注入和使用。
    -->
-
-    <context:annotation-config/>
+    <context:annotation-config></context:annotation-config>
 
     <!-- context:component-scan的作用是告诉Spring，Spring能管理bean都放在com.how2java.controller这个包下
      context:component-scan配置项不但启用了对类包进行扫描以实施注释驱动 Bean 定义的功能，同时还启用了注释驱动自动注入的功能（即还隐式地在内部注册了 AutowiredAnnotationBeanPostProcessor 和 CommonAnnotationBeanPostProcessor），
@@ -42,35 +41,35 @@
     <mvc:default-servlet-handler />
 
     <!-- 4. 视图定位到/WEB/INF/jsp 这个目录下，如果没有试图定位到/WEB/INF/jsp文件夹，静态资源默认加载为在/webapp下的静态文件，而非/WEB-INF下。-->
-
+    <!-- 视图解析-html -->
+    <bean id="freemarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/" />
+        <property name="defaultEncoding" value="utf-8" />
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="classic_compatible">true</prop>
+                <prop key="whitespace_stripping">true</prop>
+                <prop key="template_update_delay">0</prop>
+                <prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+                <prop key="time_format">HH:mm:ss</prop>
+                <prop key="date_format">yyyy-MM-dd</prop>
+                <prop key="default_encoding">UTF-8</prop>
+                <prop key="number_format">#.</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="freemarkerViewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="suffix" value=".html" />
+        <property name="order" value="0"></property>
+        <property name="contentType" value="text/html;charset=UTF-8"></property>
+    </bean>
     <!-- 视图解析-jsp -->
     <bean
             class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="viewClass"
                   value="org.springframework.web.servlet.view.JstlView" />
-        <property name="prefix" value="/WEB-INF/jsp/" />
+        <property name="prefix" value="/" />
         <property name="suffix" value=".jsp" />
         <property name="order" value="2" />
-    </bean>
-<!--    &lt;!&ndash; 视图解析-html &ndash;&gt;-->
-<!--    <bean id="freemarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">-->
-<!--        <property name="templateLoaderPath" value="" />-->
-<!--        <property name="defaultEncoding" value="utf-8" />-->
-<!--        <property name="freemarkerSettings">-->
-<!--            <props>-->
-<!--                <prop key="classic_compatible">true</prop>-->
-<!--                <prop key="whitespace_stripping">true</prop>-->
-<!--                <prop key="template_update_delay">0</prop>-->
-<!--                <prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>-->
-<!--                <prop key="time_format">HH:mm:ss</prop>-->
-<!--                <prop key="date_format">yyyy-MM-dd</prop>-->
-<!--                <prop key="default_encoding">UTF-8</prop>-->
-<!--                <prop key="number_format">#.</prop>-->
-<!--            </props>-->
-<!--        </property>-->
-<!--    </bean>-->
-    <bean id="freemarkerViewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
-        <property name="contentType" value="text/html;charset=UTF-8" />
-        <property name="order" value="1" />
     </bean>
 </beans>

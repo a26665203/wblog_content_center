@@ -7,9 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.wblog.content.esClient.ContentESClient;
 import com.wblog.content.service.WblogContentService;
 import com.wblog.pojo.WblogContentPojo;
-import com.wblog.proto.DecrUserAboutProto;
-import com.wblog.proto.IncrUserAboutProto;
-import com.wblog.user.rpc.WblogUserAboutRpc;
+import com.weblog.content.common.IDUtils;
 import com.weblog.content.common.WblogContentResult;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -34,8 +32,6 @@ import java.util.*;
 
 @Service
 public class WblogContentServiceImpl implements WblogContentService {
-    @Resource
-    WblogUserAboutRpc wblogUserAboutRpc;
     Logger logger = LoggerFactory.getLogger(WblogContentServiceImpl.class);
     @Override
     public WblogContentResult<Boolean> addWblogContent(WblogContentPojo wblogContentPojo) {
@@ -52,24 +48,12 @@ public class WblogContentServiceImpl implements WblogContentService {
             return result;
         }
         try{
-            wblogContentPojo.setId(UUID.randomUUID()+"");
+            wblogContentPojo.setCreateDate(new Date());
             //先添加到es，再把微博数+1
             JSONObject jsonObject = JSONObject.parseObject(JSON.toJSONString(wblogContentPojo));
             ContentESClient.saveData(jsonObject,"wblog_content_center","wblogContents");
-            //调用用户中心，添加微博数
-            IncrUserAboutProto.incrUserAboutReq.Builder builder = IncrUserAboutProto.incrUserAboutReq.newBuilder();
-            builder.setNickName(wblogContentPojo.getCreator());
-            builder.setReqName("wblog");
-            byte[] bytes = wblogUserAboutRpc.incrReq(builder.build().toByteArray());
-            IncrUserAboutProto.incrUserAboutRes res = IncrUserAboutProto.incrUserAboutRes.parseFrom(bytes);
-            int code = res.getCode();
-            if("200".equals(code)){
-                result.setCode(200);
-                result.setResult(true);
-            }else{
-                result.setCode(code);
-                result.setDesc(res.getDesc());
-            }
+            result.setCode(200);
+            result.setResult(true);
         }catch (Exception e){
             logger.error("WblogContentServiceImpl.addWblogContent------>"+e);
             result.setCode(400);
@@ -83,7 +67,8 @@ public class WblogContentServiceImpl implements WblogContentService {
         logger.info("WblogContentResult.findWblogContentByPage----->page:"+page+",creator:"+creator+",size:"+size);
         try {
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            boolQueryBuilder.must(QueryBuilders.termQuery("creator", creator));
+            boolQueryBuilder.must(QueryBuilders.termsQuery("creator", creator));
+            //中文分词
             SearchResponse response = ContentESClient.getClient().prepareSearch("wblog_content_center").setTypes("wblogContents")
                     .setQuery(boolQueryBuilder).addSort("createDate", SortOrder.DESC).setFrom(page).setSize(size)
                     .execute().actionGet();
@@ -91,12 +76,12 @@ public class WblogContentServiceImpl implements WblogContentService {
             List<WblogContentPojo> result = new ArrayList<WblogContentPojo>();
             for (SearchHit hit : hits.getHits()) {
                 WblogContentPojo wblogContentPojo = new WblogContentPojo();
-                Map<String, DocumentField> fields = hit.getFields();
-                wblogContentPojo.setId((String) fields.get("id").getValue());
-                wblogContentPojo.setContent((String) fields.get("content").getValue());
-                wblogContentPojo.setCreator((String) fields.get("creator").getValue());
-                wblogContentPojo.setImageUrl((String) fields.get("imageUrl").getValue());
-                wblogContentPojo.setCreateDate((Date) fields.get("createDate").getValue());
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                wblogContentPojo.setId((String) sourceAsMap.get("id"));
+                wblogContentPojo.setContent((String) sourceAsMap.get("content"));
+                wblogContentPojo.setCreator((String) sourceAsMap.get("creator"));
+                wblogContentPojo.setImageUrl((String) sourceAsMap.get("imageUrl"));
+                wblogContentPojo.setCreateDate(new Date((Long)sourceAsMap.get("createDate")));
                 result.add(wblogContentPojo);
             }
             res.setCode(200);
@@ -120,24 +105,77 @@ public class WblogContentServiceImpl implements WblogContentService {
             BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
             queryBuilder.must(QueryBuilders.termQuery("id", id));
             BulkByScrollResponse res = DeleteByQueryAction.INSTANCE.newRequestBuilder(ContentESClient.getClient())
-                    .filter(queryBuilder).source("wblog_content_center","wblogContents").get();
-            long del = res.getDeleted();
-            DecrUserAboutProto.decrUserAboutReq.Builder builder = DecrUserAboutProto.decrUserAboutReq.newBuilder();
-            builder.setReqName("wblog");
-            builder.setNickName(nickName);
-            byte[] bytes = wblogUserAboutRpc.decrReq(builder.build().toByteArray());
-            DecrUserAboutProto.decrUserAboutRes resq = DecrUserAboutProto.decrUserAboutRes.parseFrom(bytes);
-            if (resq.getCode() == 200) {
-                result.setCode(200);
-                result.setResult(true);
-            } else {
-                result.setCode(resq.getCode());
-                result.setDesc(resq.getDesc());
-            }
+                    .filter(queryBuilder).source("wblog_content_center").get();
+            result.setCode(200);
+            result.setResult(true);
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("WblogContentServiceImpl.deleteWblog----->" + e);
+            result.setCode(400);
+            result.setDesc(e.getMessage());
         }
         return result;
+    }
+
+    @Override
+    public WblogContentResult<List<WblogContentPojo>> findAllWblogContentByPage(Integer page, Integer size) {
+        WblogContentResult<List<WblogContentPojo>> res = new WblogContentResult<List<WblogContentPojo>>();
+        logger.info("WblogContentResult.findWblogContentByPage----->page:"+page+",size:"+size);
+        try {
+            SearchResponse response = ContentESClient.getClient().prepareSearch("wblog_content_center").setTypes("wblogContents")
+                    .addSort("createDate", SortOrder.DESC).setFrom(page).setSize(size)
+                    .execute().actionGet();
+            SearchHits hits = response.getHits();
+            List<WblogContentPojo> result = new ArrayList<WblogContentPojo>();
+            for (SearchHit hit : hits.getHits()) {
+                WblogContentPojo wblogContentPojo = new WblogContentPojo();
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                wblogContentPojo.setId((String) sourceAsMap.get("id"));
+                wblogContentPojo.setContent((String) sourceAsMap.get("content"));
+                wblogContentPojo.setCreator((String) sourceAsMap.get("creator"));
+                wblogContentPojo.setImageUrl((String) sourceAsMap.get("imageUrl"));
+                wblogContentPojo.setCreateDate(new Date((Long)sourceAsMap.get("createDate")));
+                result.add(wblogContentPojo);
+            }
+            res.setCode(200);
+            res.setResult(result);
+        }catch (Exception e){
+            logger.error("WblogContentResult.findWblogContentByPage,{}",e);
+            res.setCode(400);
+            res.setDesc(e.getMessage());
+        }
+        return res;
+    }
+
+    @Override
+    public WblogContentResult<WblogContentPojo> findWblogContentById(String id) {
+        WblogContentResult<WblogContentPojo> res = new WblogContentResult<WblogContentPojo>();
+        logger.info("WblogContentResult.findWblogContentById----->Id:"+id);
+        try {
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+            boolQueryBuilder.must(QueryBuilders.termQuery("id", id));
+            SearchResponse response = ContentESClient.getClient().prepareSearch("wblog_content_center").setTypes("wblogContents")
+                    .setQuery(boolQueryBuilder).addSort("createDate", SortOrder.DESC)
+                    .execute().actionGet();
+            SearchHits hits = response.getHits();
+            List<WblogContentPojo> result = new ArrayList<WblogContentPojo>();
+            for (SearchHit hit : hits.getHits()) {
+                WblogContentPojo wblogContentPojo = new WblogContentPojo();
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                wblogContentPojo.setId((String) sourceAsMap.get("id"));
+                wblogContentPojo.setContent((String) sourceAsMap.get("content"));
+                wblogContentPojo.setCreator((String) sourceAsMap.get("creator"));
+                wblogContentPojo.setImageUrl((String) sourceAsMap.get("imageUrl"));
+                wblogContentPojo.setCreateDate(new Date((Long)sourceAsMap.get("createDate")));
+                result.add(wblogContentPojo);
+            }
+            res.setCode(200);
+            res.setResult(result.get(0));
+        }catch (Exception e){
+            logger.error("WblogContentResult.findWblogContentByPage,{}",e);
+            res.setCode(400);
+            res.setDesc(e.getMessage());
+        }
+        return res;
     }
 }

@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.wblog.content.esClient.ContentESClient;
 import com.wblog.content.service.WblogMsgService;
 import com.wblog.pojo.WblogMsgPojo;
-import com.wblog.user.rpc.WblogUserAboutRpc;
+import com.weblog.content.common.IDUtils;
 import com.weblog.content.common.WblogContentResult;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -48,7 +48,7 @@ public class WblogMsgServiceImpl implements WblogMsgService {
             return result;
         }
         try{
-            wblogContentPojo.setId(UUID.randomUUID().toString());
+            wblogContentPojo.setCreateDate(new Date());
             JSONObject jsonObject = JSONObject.parseObject(JSON.toJSONString(wblogContentPojo));
             ContentESClient.saveData(jsonObject,"wblog_content_center_msg","wblogMsgs");
             //应该还有个发送消息的逻辑，后面补
